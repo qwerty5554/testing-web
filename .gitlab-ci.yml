@@ -1,28 +1,20 @@
 stages:
   - build
 
+variables:
+  DOCKER_TLS_CERTDIR: ""
+
 build-docker:
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
   stage: build
   image: docker:latest
   only:
     - master
     - develop
   services:
-  - name: docker:dind
-    command:
-      - /bin/sh
-      - -c
-      - |
-        mkdir -p /etc/docker/certs.d/10.0.2.15:5050
-        echo "$TLS_CA_CERT" > /etc/docker/certs.d/10.0.2.15:5050/ca.crt
-        update-ca-certificates
-        dockerd-entrypoint.sh
+    - name: docker:dind
+      command:
+        - --insecure-registry=10.0.2.15:5050
   before_script:
-    - echo Show environment variables
-    - export
-    - echo Show DIND Docker info
     - docker info
   script:
     - build-docker/build.sh
