@@ -10,11 +10,15 @@ build-docker:
     - master
     - develop
   services:
-    - name: docker:dind
-      command:
-        - /bin/sh
-        - -c
-        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
+  - name: docker:dind
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/docker/certs.d/10.0.2.15:5050
+        echo "$TLS_CA_CERT" > /etc/docker/certs.d/10.0.2.15:5050/ca.crt
+        update-ca-certificates
+        dockerd-entrypoint.sh
   before_script:
     - echo Show environment variables
     - export
