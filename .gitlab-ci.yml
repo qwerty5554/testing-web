@@ -2,23 +2,24 @@ stages:
   - build
 
 build-docker:
-  stage: build
-  image: docker:24.0.5
-
-  services:
-    - name: docker:24.0.5-dind
-      command: ["--insecure-registry=10.0.2.15:5050"]
-
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-
-  before_script:
-    - docker info
-
-  script:
-    - sh build-docker/build.sh
-
+    DOCKER_TLS_CERTDIR: "/certs"
+    TLS_CA_CERT: "$TLS_CA_CERT"
+  stage: build
+  image: docker:latest
   only:
-    - develop
     - master
+    - develop
+  services:
+    - name: docker:dind
+      command:
+        - /bin/sh
+        - -c
+        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
+  before_script:
+    - echo Show environment variables
+    - export
+    - echo Show DIND Docker info
+    - docker info
+  script:
+    - build-docker/build.sh
