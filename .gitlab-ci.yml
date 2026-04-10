@@ -21,7 +21,7 @@ build-docker:
   image: $DOCKER_IMAGE
   rules:
   - when: always
-  services:
+ services:
   - name: $DIND_IMAGE
     command:
       - dockerd-entrypoint.sh
