@@ -1,25 +1,24 @@
 stages:
   - build
 
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-
 build-docker:
   stage: build
   image: docker:24.0.5
+
   services:
-    - docker:24.0.5-dind
+    - name: docker:24.0.5-dind
+      command: ["--insecure-registry=10.0.2.15:5050"]
 
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
 
   before_script:
-    - mkdir -p /etc/docker
-    - echo '{"insecure-registries":["10.0.2.15:5050"]}' > /etc/docker/daemon.json
     - docker info
 
   script:
     - sh build-docker/build.sh
+
+  only:
+    - develop
+    - master
