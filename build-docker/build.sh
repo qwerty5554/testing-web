@@ -6,7 +6,7 @@ DOCKER_BUILDKIT=1 docker build -f build-docker/Dockerfile -t ${CI_REGISTRY_IMAGE
 set +e
 
 echo "Push to GitLab Registry"
-echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u "$CI_REGISTRY_USER" --password-stdin
+docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}
 # also push with hash version for history
 docker tag ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME} ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
