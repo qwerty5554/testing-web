@@ -50,7 +50,6 @@ deploy-staging:
         LogLevel ERROR
     SSH_SERVER: $SSH_USERNAME@$DEPLOY_SERVER
     CI_API_V4_URL: http://10.0.2.15:8001/api/v4
-    SSH_PRIVATE_KEY_FILE: $SSH_PRIVATE_KEY_FILE
     SSH_USERNAME: $SSH_USERNAME
     DEPLOY_SERVER: $DEPLOY_SERVER
     WORK_DIR: $WORK_DIR
@@ -60,7 +59,6 @@ deploy-staging:
     - eval $(ssh-agent -s)
     - export
     - set -x
-    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
     - mkdir -p ~/.ssh/
     - chmod 700 ~/.ssh
     - echo "$SSH_CONFIG" > ~/.ssh/config
