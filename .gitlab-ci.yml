@@ -1,24 +1,33 @@
+variables:
+  CA_CERT_FILE: /etc/gitlab/ssl/localhost.crt
+  DOCKER_IMAGE: docker:latest
+  DIND_IMAGE: docker:dind
+  DEPLOY_IMAGE: instrumentisto/gitlab-builder:latest
+
+  # should be defined in project CI/CD settings
+  #SSH_PRIVATE_KEY_FILE:
+  #SSH_USERNAME:
+  #DEPLOY_SERVER:
+  #WORK_DIR:
 stages:
   - build
+  - deploy
 
 build-docker:
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     TLS_CA_CERT: "$TLS_CA_CERT"
   stage: build
-  image: docker:latest
+  image: $DOCKER_IMAGE
   only:
     - master
     - develop
   services:
-  - name: docker:dind
-    command:
-      - /bin/sh
-      - -c
-      - |
-        echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt
-        update-ca-certificates
-        dockerd-entrypoint.sh --insecure-registry=10.0.2.15:5050
+    - name: $DIND_IMAGE
+      command:
+        - /bin/sh
+        - -c
+        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
   before_script:
     - echo Show environment variables
     - export
@@ -26,3 +35,39 @@ build-docker:
     - docker info
   script:
     - build-docker/build.sh
+
+deploy-staging:
+  stage: deploy
+  image: $DEPLOY_IMAGE
+  only:
+    - master
+  variables:
+    SSH_CONFIG: |
+      Host *
+        StrictHostKeyChecking no
+        UserKnownHostsFile=/dev/null
+        LogLevel ERROR
+    SSH_SERVER: $SSH_USERNAME@$DEPLOY_SERVER
+    CI_API_V4_URL: http://10.0.2.15:8001/api/v4
+    SSH_PRIVATE_KEY_FILE: $SSH_PRIVATE_KEY_FILE
+    SSH_USERNAME: $SSH_USERNAME
+    DEPLOY_SERVER: $DEPLOY_SERVER
+    WORK_DIR: $WORK_DIR
+  environment: staging
+  script:
+    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
+    - eval $(ssh-agent -s)
+    - export
+    - set -x
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+    - mkdir -p ~/.ssh/
+    - chmod 700 ~/.ssh
+    - echo "$SSH_CONFIG" > ~/.ssh/config
+    - cat .secure_files/$SSH_PRIVATE_KEY_FILE | ssh-add -
+    - ssh $SSH_SERVER "echo 'Stop test-web-app on host:' && hostname && cd $WORK_DIR && ( [[ -f $WORK_DIR/docker-compose.yml ]] && docker compose stop && sleep 2 || true )"
+    - echo "Start copy files to remote machine"
+    - scp compose/docker-compose.yml $SSH_SERVER:$WORK_DIR/docker-compose.yml
+    - cat compose/.env | while read line; do eval echo $line; done > /tmp/.env
+    - scp /tmp/.env $SSH_SERVER:$WORK_DIR/.env
+    - ssh $SSH_SERVER docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - ssh $SSH_SERVER "echo 'Start test-web-app on host:' && hostname && cd $WORK_DIR && docker compose pull && sleep 2 && docker compose up -d"
