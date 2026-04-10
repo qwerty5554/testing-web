@@ -10,10 +10,16 @@ build-docker:
   image: docker:24.0.5
   services:
     - docker:24.0.5-dind
-  only:
-    - master
-    - develop
+
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+
   before_script:
+    - mkdir -p /etc/docker
+    - echo '{"insecure-registries":["10.0.2.15:5050"]}' > /etc/docker/daemon.json
     - docker info
+
   script:
     - sh build-docker/build.sh
