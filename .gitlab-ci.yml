@@ -19,9 +19,8 @@ build-docker:
     TLS_CA_CERT: "$TLS_CA_CERT"
   stage: build
   image: $DOCKER_IMAGE
-  only:
-    - master
-    - develop
+  rules:
+  - when: always
   services:
   - name: $DIND_IMAGE
     command:
