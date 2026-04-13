@@ -15,7 +15,7 @@ stages:
 
 build-docker:
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
     TLS_CA_CERT: "$TLS_CA_CERT"
   stage: build
   image: $DOCKER_IMAGE
@@ -27,7 +27,7 @@ build-docker:
       command:
         - /bin/sh
         - -c
-        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
+        - echo "$CI_REGISTRY_PASSWORD" | docker login 10.0.2.15:5050 -u "$CI_REGISTRY_USER" --password-stdin
   before_script:
     - echo Show environment variables
     - export
