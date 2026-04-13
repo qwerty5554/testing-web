@@ -19,24 +19,23 @@ build-docker:
     TLS_CA_CERT: "$TLS_CA_CERT"
   stage: build
   image: $DOCKER_IMAGE
-
-  rules:
-    - when: always
-
+  only:
+    - master
+    - develop
   services:
     - name: $DIND_IMAGE
       command:
-        - dockerd-entrypoint.sh
-        - --insecure-registry=10.0.2.15:5050
-
+        - /bin/sh
+        - -c
+        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
   before_script:
     - echo Show environment variables
     - export
     - echo Show DIND Docker info
     - docker info
-
   script:
     - build-docker/build.sh
+
 deploy-staging:
   stage: deploy
   image: $DEPLOY_IMAGE
@@ -50,6 +49,7 @@ deploy-staging:
         LogLevel ERROR
     SSH_SERVER: $SSH_USERNAME@$DEPLOY_SERVER
     CI_API_V4_URL: http://10.0.2.15:8001/api/v4
+    SSH_PRIVATE_KEY_FILE: $SSH_PRIVATE_KEY_FILE
     SSH_USERNAME: $SSH_USERNAME
     DEPLOY_SERVER: $DEPLOY_SERVER
     WORK_DIR: $WORK_DIR
@@ -59,10 +59,11 @@ deploy-staging:
     - eval $(ssh-agent -s)
     - export
     - set -x
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
     - mkdir -p ~/.ssh/
     - chmod 700 ~/.ssh
     - echo "$SSH_CONFIG" > ~/.ssh/config
-    - echo "$SSH_PRIVATE_KEY" | ssh-add -
+    - cat .secure_files/$SSH_PRIVATE_KEY_FILE | ssh-add -
     - ssh $SSH_SERVER "echo 'Stop test-web-app on host:' && hostname && cd $WORK_DIR && ( [[ -f $WORK_DIR/docker-compose.yml ]] && docker compose stop && sleep 2 || true )"
     - echo "Start copy files to remote machine"
     - scp compose/docker-compose.yml $SSH_SERVER:$WORK_DIR/docker-compose.yml
