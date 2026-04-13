@@ -4,44 +4,42 @@ variables:
   DIND_IMAGE: docker:dind
   DEPLOY_IMAGE: instrumentisto/gitlab-builder:latest
 
-  # should be defined in project CI/CD settings
-  #SSH_PRIVATE_KEY_FILE:
-  #SSH_USERNAME:
-  #DEPLOY_SERVER:
-  #WORK_DIR:
 stages:
   - build
   - deploy
 
 build-docker:
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
-    TLS_CA_CERT: "$TLS_CA_CERT"
   stage: build
   image: $DOCKER_IMAGE
 
-  rules:
-    - when: always
-
   services:
     - name: $DIND_IMAGE
-      command:
-        - dockerd-entrypoint.sh
-        - --insecure-registry=10.0.2.15:5050
+      command: ["--insecure-registry=10.0.2.15:5050"]
+
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+
+  only:
+    - master
+    - develop
 
   before_script:
-    - echo Show environment variables
+    - echo "Show environment variables"
     - export
-    - echo Show DIND Docker info
+    - echo "Show DIND Docker info"
     - docker info
 
   script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login 10.0.2.15:5050 -u "$CI_REGISTRY_USER" --password-stdin
     - build-docker/build.sh
+
 deploy-staging:
   stage: deploy
   image: $DEPLOY_IMAGE
+
   only:
     - master
+
   variables:
     SSH_CONFIG: |
       Host *
@@ -54,7 +52,9 @@ deploy-staging:
     SSH_USERNAME: $SSH_USERNAME
     DEPLOY_SERVER: $DEPLOY_SERVER
     WORK_DIR: $WORK_DIR
+
   environment: staging
+
   script:
     - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
     - eval $(ssh-agent -s)
