@@ -66,7 +66,7 @@ deploy-staging:
     - mkdir -p ~/.ssh/
     - chmod 700 ~/.ssh
     - echo "$SSH_CONFIG" > ~/.ssh/config
-    - cat .secure_files/$SSH_PRIVATE_KEY_FILE | ssh-add -
+    - cat .secure_files/10.0.2.15_appuser.sshkey | ssh-add -
     - ssh $SSH_SERVER "echo 'Stop test-web-app on host:' && hostname && cd $WORK_DIR && ( [[ -f $WORK_DIR/docker-compose.yml ]] && docker compose stop && sleep 2 || true )"
     - echo "Start copy files to remote machine"
     - scp compose/docker-compose.yml $SSH_SERVER:$WORK_DIR/docker-compose.yml
