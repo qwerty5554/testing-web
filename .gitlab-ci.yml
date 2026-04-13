@@ -14,10 +14,12 @@ build-docker:
 
   services:
     - name: $DIND_IMAGE
-      command: ["--insecure-registry=10.0.2.15:5050"]
+      command:
+        - "--insecure-registry=10.0.2.15:5050"
 
   variables:
     DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
 
   only:
     - master
