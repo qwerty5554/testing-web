@@ -4,9 +4,9 @@ services:
     container_name: my-test-web
     image: ${REGISTRY}/tests/testing-web:${TESTING_WEB_TAG}
     ports:
-      - 9000:9000
+      - 8081:8081
     command:
-      - "--server.port=9000"
+      - "--server.port=8081"
     networks:
       - vm_net
     restart: always
