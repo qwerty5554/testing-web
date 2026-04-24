@@ -1,0 +1,22 @@
+stages:
+  - build
+
+build-docker:
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    TLS_CA_CERT: "$TLS_CA_CERT"
+  stage: build
+  image: docker:latest
+  only:
+    - master
+    - develop
+  services:
+    - name: docker:dind
+      command:
+        - /bin/sh
+        - -c
+        - echo "$TLS_CA_CERT" > /usr/local/share/ca-certificates/my-ca.crt && update-ca-certificates && dockerd-entrypoint.sh || exit
+  before_script:
+    - docker info
+  script:
+    - build-docker/build.sh
