@@ -10,8 +10,14 @@ stages:
 
 build-docker:
   stage: build
-  image: $DOCKER_IMAGE
 
+  cache:
+    paths:
+      - .m2/repository/
+
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    TLS_CA_CERT: "$TLS_CA_CERT"
   services:
     - name: $DIND_IMAGE
       command:
